@@ -74,13 +74,6 @@ remove = (data) => {
 }
 // async
 
-// exports.getData = function (req, res) {
-//     // read().then(customer => {
-//     //     console.log(customer)
-//     //     res.json(customer)
-//     // })
-//     const customers = await read
-// }
 
 exports.getData = async (req, res) => {
     const customers = await get();
