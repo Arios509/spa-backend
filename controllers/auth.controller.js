@@ -3,7 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const config = require('../configs/config.js');
-// check user exist 
+
+// Check user exist 
 const checkUser = (user) => {
     return new Promise((resolve, reject) => {
         db.all("SELECT * FROM user_tbl where username =?", user, (err, rows) => {
@@ -12,14 +13,14 @@ const checkUser = (user) => {
     })
 }
 
-// register users
+// Register users
 register = async (data, res) => {
     const checkNewUser = await checkUser(data.username);
     if (checkNewUser.length === 0) {
         try {
             const hashedPassword = await bcrypt.hash(data.password, 10)
             db.run(`INSERT INTO user_tbl (username, password) VALUES (?,?) `, [data.username, hashedPassword]);
-            res.status(201).send({ message: 'Success' })
+            res.status(201).send({ message: 'Registered success' })
 
         } catch (err) {
             res.status(500).send({ message: err })
@@ -39,8 +40,8 @@ login = async (data, res) => {
                 const username = data.username;
 
                 if (await bcrypt.compare(data.password, rows.password)) {
-                    const accessToken = generateAccessToken(username)
-                    const refreshToken = jwt.sign({ username }, config.REFRESH_TOKEN)
+                    const accessToken = generateAccessToken(username, rows.id)
+                    const refreshToken = jwt.sign({ username, id: rows.id }, config.REFRESH_TOKEN)
                     db.run(`INSERT INTO token_tbl (refreshtoken) VALUES (?)`, [refreshToken]);
                     res.status(201).send({ message: 'Login successfull', accessToken, refreshToken })
                 } else {
@@ -57,14 +58,15 @@ login = async (data, res) => {
 
 }
 
-// Generate token
-generateAccessToken = (user) => {
-    return jwt.sign({ user }, config.ACCESS_TOKEN, { expiresIn: '10m' });
-}
+// Generate token 
+generateAccessToken = (user, id) => {
+    console.log('generate token', user)
+    return jwt.sign( {name: user, id: id} , config.ACCESS_TOKEN, { expiresIn: '10m' });
+} 
 
 // Refresh token function
 refreshToken = (req, res) => {
-
+ 
     const refreshToken = req.body.token;
     if (refreshToken === null) return res.sendStatus(401)
     db.all(`SELECT * FROM token_tbl WHERE refreshtoken = ?`, [refreshToken], ((err, rows) => {
@@ -72,8 +74,9 @@ refreshToken = (req, res) => {
             return res.sendStatus(403)
         } else {
             jwt.verify(refreshToken, config.REFRESH_TOKEN, (err, user) => {
+                console.log(user)
                 if (err) return res.status(403).send(err)
-                const accessToken = generateAccessToken({ name: user.username });
+                const accessToken = generateAccessToken( user.username, user.id );
                 res.json({ accessToken })
             })
         }
@@ -86,8 +89,7 @@ logoutUser = (req, res) => {
     if (refreshToken === null) return res.sendStatus(401)
     db.all(`DELETE FROM token_tbl WHERE refreshtoken = ?`, [refreshToken], ((err, rows) => {
         if (err) return res.sendStatus(403)
-        res.status(204).send({ message: 'Success logout' })
-
+         res.status(201).send({ message: 'Success logout' })
     }))
 }
 

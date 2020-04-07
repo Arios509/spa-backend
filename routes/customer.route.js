@@ -3,21 +3,13 @@ const router = express.Router();
 const jwt = require('jsonwebtoken')
 const config = require('../configs/config');
 const customer_controller = require('../controllers/customer.controller');
-const user_controller = require('../controllers/user.controller');
 
 
 // a simple test url to check that all of our files are communicating correctly.
 router.get('/customer', customer_controller.getData);
 router.post('/customer', customer_controller.createData);
 router.put('/customer', customer_controller.updateData);
-router.delete('/customer', customer_controller.deleteData);
-
-
-
-
-// User
-router.post('/register', user_controller.registerUser);
-router.post('/login', user_controller.loginUser);
+router.delete('/customer/:id?', customer_controller.deleteData);
 
 // Verify token
 // AUthorization : Bearer <token>
